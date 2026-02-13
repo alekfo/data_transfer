@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: loader_bot
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data  # Для сохранения базы данных
+      - ./sverdcontrol-2c9ddd33bbc0.json:/app/sverdcontrol-2c9ddd33bbc0.json  # Ваш файл сервисного аккаунта
+    env_file:
+      - .env  # Файл с переменными окружения
+    environment:
+      - TZ=Europe/Moscow  # Часовой пояс
