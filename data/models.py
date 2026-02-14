@@ -35,6 +35,7 @@ class Task(Base):
     type_of_work = Column(String(500), nullable=False)
     payment = Column(Integer, nullable=False)
     performers = Column(String(500), nullable=True)
+    min_hours = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.now())
 
 class Payout(Base):

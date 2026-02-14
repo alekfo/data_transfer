@@ -2,6 +2,7 @@ import os
 import json
 from datetime import datetime, timedelta
 from typing import List, Any, Dict, Optional
+import logging
 
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, func, extract, inspect
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,9 +10,11 @@ from sqlalchemy.orm import sessionmaker
 
 from data.models import Base, Sheet, Task, Payout
 
+logger = logging.getLogger('main_logger')
 
 engine = create_engine("sqlite:///data/google_sheets.db", echo=False)
 SessionLocal = sessionmaker(bind=engine)
+
 
 def init_db():
     Base.metadata.create_all(bind=engine)
@@ -40,7 +43,8 @@ def add_task(data: dict) -> Task:
             loaders_count=data['loaders_count'],
             type_of_work=data['type_of_work'],
             payment=data['payment'],
-            performers=performers_str
+            performers=performers_str,
+            min_hours=data.get('min_hours')
         )
         session.add(new_task)
         session.commit()
@@ -55,7 +59,8 @@ def find_task(data: dict) -> Optional[Task]:
             Task.address == data['address'],
             Task.loaders_count == data['loaders_count'],
             Task.type_of_work == data['type_of_work'],
-            Task.payment == data['payment']
+            Task.payment == data['payment'],
+            Task.min_hours == data.get('min_hours')
         ).first()
 
 def get_sheet_id(month: str, sheet_type: str) -> Optional[str]:
@@ -126,3 +131,29 @@ def is_table_exist(month: str, sheet_type: str) -> Optional[Sheet]:
         sheet = session.query(Sheet).filter(Sheet.month == month, Sheet.mark == sheet_type).one_or_none()
         return sheet
 
+
+def delete_table_by_id(table_id: int) -> bool:
+    """
+    Удаляет таблицу из базы данных по её ID
+
+    Args:
+        table_id: ID таблицы для удаления
+
+    Returns:
+        bool: True если удаление успешно, False если таблица не найдена
+    """
+    with SessionLocal() as session:
+        try:
+            table = session.query(Sheet).filter(Sheet.id == table_id).first()
+            if table:
+                session.delete(table)
+                session.commit()
+                logger.info(f"✅ Таблица с ID {table_id} успешно удалена из базы")
+                return True
+            else:
+                logger.warning(f"❌ Таблица с ID {table_id} не найдена в базе")
+                return False
+        except Exception as e:
+            logger.error(f"❌ Ошибка при удалении таблицы с ID {table_id}: {e}")
+            session.rollback()
+            raise e

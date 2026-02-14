@@ -127,12 +127,9 @@ def choise_table_type_keyboard():
     return builder.as_markup()
 
 
-def all_links_keyboard(tables_data: Dict[str, List[Dict[str, str]]]):
+def all_links_keyboard_with_delete(tables_data: Dict[str, List[Dict[str, str]]]):
     """
-    Создает инлайн-клавиатуру со всеми таблицами, сгруппированными по типу
-
-    Args:
-        tables_data: Словарь с таблицами из get_all_tables()
+    Создает инлайн-клавиатуру со всеми таблицами и кнопками удаления рядом с каждой
     """
     builder = InlineKeyboardBuilder()
 
@@ -149,11 +146,18 @@ def all_links_keyboard(tables_data: Dict[str, List[Dict[str, str]]]):
         sorted_tasks = sorted(tables_data['for_task'], key=lambda x: x['month'])
 
         for table in sorted_tasks:
-            button_text = f"📅 {table['month']} - Заявки"
+            # Строка с ссылкой на таблицу
             builder.row(
                 types.InlineKeyboardButton(
-                    text=button_text,
+                    text=f"📅 {table['month']} - Заявки",
                     url=table['url']
+                )
+            )
+            # Отдельная строка с кнопкой удаления для этой таблицы
+            builder.row(
+                types.InlineKeyboardButton(
+                    text=f"❌ Удалить таблицу {table['month']}",
+                    callback_data=f"delete_table_{table['id']}"
                 )
             )
 
@@ -170,11 +174,18 @@ def all_links_keyboard(tables_data: Dict[str, List[Dict[str, str]]]):
         sorted_loaders = sorted(tables_data['for_loader'], key=lambda x: x['month'])
 
         for table in sorted_loaders:
-            button_text = f"📅 {table['month']} - Грузчики"
+            # Строка с ссылкой на таблицу
             builder.row(
                 types.InlineKeyboardButton(
-                    text=button_text,
+                    text=f"📅 {table['month']} - Грузчики",
                     url=table['url']
+                )
+            )
+            # Отдельная строка с кнопкой удаления для этой таблицы
+            builder.row(
+                types.InlineKeyboardButton(
+                    text=f"❌ Удалить таблицу {table['month']}",
+                    callback_data=f"delete_table_{table['id']}"
                 )
             )
 

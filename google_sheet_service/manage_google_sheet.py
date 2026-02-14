@@ -194,7 +194,7 @@ def add_data_to_tasks_google_sheet(new_task: Task, month: str, date_of_the_month
     if not wb:
         raise ValueError('ошибка при подключении к таблице')
 
-    worksheet = wb.worksheet('Лист1')
+    worksheet = wb.worksheet('Заявки')
 
     next_number = get_next_row(worksheet)
 
@@ -207,7 +207,7 @@ def add_data_to_tasks_google_sheet(new_task: Task, month: str, date_of_the_month
         'Грузчик',
         '',
         new_task.payment,
-        ''
+        new_task.min_hours
     ]
 
     # Определяем колонку для дня
@@ -272,7 +272,7 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
     if not wb:
         raise ValueError('ошибка при подключении к таблице')
 
-    worksheet = wb.worksheet('Лист1')
+    worksheet = wb.worksheet('Грузчики')
 
 
     loaders_payment_str = new_payout.loaders_payments

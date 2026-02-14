@@ -128,18 +128,33 @@ async def parse_task_data(message: types.Message, state: FSMContext):
             loaders_count = int(match.group(1))
             break
 
-    # 4. Парсим тип работ (все что между "Характер работы:" и "( оплата от")
+    # 4. Парсим минимальное количество часов из строки "( оплата от 3 ч )"
+    min_hours = None
+    hours_patterns = [
+        r'\(\s*оплата\s+от\s+(\d+)\s*ч\s*\)',  # ( оплата от 3 ч )
+        r'оплата\s+от\s+(\d+)\s*часа?',  # оплата от 3 часа
+        r'от\s+(\d+)\s*ч\.?\s*\)?',  # от 3 ч
+    ]
+
+    for pattern in hours_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            min_hours = int(match.group(1))
+            logger.info(f"✅ Найдено минимальное количество часов: {min_hours}")
+            break
+
+    # 5. Парсим тип работ (все что между "Характер работы:" и "( оплата от")
     work_pattern = r'Характер работы:\s*(.+?)\s*\(\s*оплата от'
     work_match = re.search(work_pattern, text, re.DOTALL)
 
     type_of_work = work_match.group(1).strip() if work_match else None
 
-    # 5. Парсим оплату
+    # 6. Парсим оплату
     payment_pattern = r'Оплата\s+(\d+)\s*руб/час'
     payment_match = re.search(payment_pattern, text)
     payment = int(payment_match.group(1)) if payment_match else None
 
-    # 6. ПАРСИМ ФАМИЛИИ ГРУЗЧИКОВ (только русские фамилии с именами)
+    # 7. ПАРСИМ ФАМИЛИИ ГРУЗЧИКОВ (только русские фамилии с именами)
     performers = []
     # Ищем строки, которые содержат фамилию и имя (Фамилия Имя)
     performer_pattern = r'^([А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?)$'
@@ -171,6 +186,7 @@ async def parse_task_data(message: types.Message, state: FSMContext):
         "loaders_count": loaders_count,
         "type_of_work": type_of_work,
         "payment": payment,
+        "min_hours": min_hours,
         "performers": performers,
         "raw_text": text
     }
@@ -188,6 +204,7 @@ async def parse_task_data(message: types.Message, state: FSMContext):
         f"⏰ <b>Время:</b> <code>{time if time else 'нет данных'}</code>\n"
         f"📍 <b>Адрес:</b> <code>{address if address else 'нет данных'}</code>\n"
         f"👷 <b>Требуется грузчиков (чел):</b> <code>{loaders_count if loaders_count else '❌нет данных'}</code>\n"
+        f"⏱️ <b>Мин. часов:</b> <code>{min_hours if min_hours else '❌нет данных'}</code>\n"
         f"📋 <b>Характер работ:</b> <code>{type_of_work[:50] if type_of_work else '❌нет данных'}...</code>\n"
         f"💰 <b>Оплата (руб/час):</b> <code>{payment if payment else 'нет данных'}</code>\n"
     )
@@ -291,11 +308,14 @@ async def got_no(callback_query: types.CallbackQuery, state: FSMContext):
         "📋 *4. ХАРАКТЕР РАБОТЫ:*\n"
         "`Характер работы: подготовить склад для разгрузки, выбросить картон, выгрузка по коробочно товар из машины перенести на склад, расформировать товар по местам хранения.`\n"
         "   ⚠️ *ВАЖНО:* Начинайте с фразы \"Характер работы:\"\n\n"
-        "💰 *5. ОПЛАТА:*\n"
+        "⏱️ *5. МИНИМАЛЬНОЕ КОЛИЧЕСТВО ЧАСОВ:*\n"
+        "`( оплата от 3 ч )`\n"
+        "   ⚠️ *ВАЖНО:* Укажите в скобках \"( оплата от X ч )\"\n\n"
+        "💰 *6. ОПЛАТА:*\n"
         "`( оплата от 3 ч )`\n"
         "`Оплата 300 руб/час , выплата по окончанию смены`\n"
         "   ⚠️ *ВАЖНО:* Укажите \"Оплата XXX руб/час\"\n\n"
-        "👤 *6. ФАМИЛИИ ГРУЗЧИКОВ:*\n"
+        "👤 *7. ФАМИЛИИ ГРУЗЧИКОВ:*\n"
         "`Петров Игорь`\n"
         "`Брезгин Денис`\n"
         "   ⚠️ *ВАЖНО:* Каждая фамилия с именем на новой строке\n\n"
