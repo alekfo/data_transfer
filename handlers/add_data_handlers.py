@@ -345,6 +345,9 @@ async def parse_loaders_data(message: types.Message, state: FSMContext):
     text = message.text
     lines = [line.strip() for line in text.strip().split('\n') if line.strip()]
 
+    #Забираем 1 строку как комментарий
+    comment = lines[0]
+
     # 1. Парсим дату из первой строки
     date_pattern = r'Реестр оплачен\s+(\d{2}\.\d{2}\.\d{4})'
     date_match = re.search(date_pattern, text)
@@ -407,6 +410,7 @@ async def parse_loaders_data(message: types.Message, state: FSMContext):
 
     # Формируем результат
     parsed_loader_data = {
+        "comment": comment,
         "date": date,
         "address": address,
         "hours": hours,
@@ -426,6 +430,7 @@ async def parse_loaders_data(message: types.Message, state: FSMContext):
         f"📅 <b>Дата реестра:</b> <code>{date if date else '❌нет данных'}</code>\n"
         f"📍 <b>Адрес:</b> <code>{address if address else '❌нет данных'}</code>\n"
         f"⏱️ <b>Отработано часов:</b> <code>{hours if hours else '❌нет данных'}</code>\n\n"
+        f"📍 <b>Комментарий:</b> <code>{comment if comment else '❌нет данных'}</code>\n"
         f"👥 <b>Выплаты грузчикам:</b>\n"
     )
 
@@ -460,10 +465,11 @@ async def save_loaders_data(callback_query: types.CallbackQuery, state: FSMConte
     try:
         new_payout = find_payout(saved_data['parsed_loaders'])
         if not new_payout:
-            new_payout = add_payout(parsed_loader_data['date'],
-                                parsed_loader_data['address'],
-                                parsed_loader_data['hours'],
-                                parsed_loader_data['loaders_payments'])
+            new_payout = add_payout(parsed_loader_data['comment'],
+                                    parsed_loader_data['date'],
+                                    parsed_loader_data['address'],
+                                    parsed_loader_data['hours'],
+                                    parsed_loader_data['loaders_payments'])
             logger.info(f'Выплата успешно добавлена в базу (id #{new_payout.id})')
             await callback_query.message.answer(f"✅Выплата успешно добавлена в базу.\n\n"
                                             f"Добавляем данные в Google-таблицу...",

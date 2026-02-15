@@ -370,7 +370,12 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
                         col=day_column,
                         color='green'
                     )
-                    logger.info(f"✅ Ячейка {column_number_to_letter(day_column)}{last_row} выделена зеленым цветом")
+                logger.info(f"✅ Ячейка {column_number_to_letter(day_column)}{last_row} выделена зеленым цветом")
+
+                # Добавляем комментарий к ячейке выплаты (колонка AQ)
+                cell_address = f"AQ{last_row}"
+                worksheet.insert_note(cell_address, new_payout.comment)
+                logger.info(f"✅ Добавлен комментарий к ячейке {cell_address}: {new_payout.comment}")
 
                 logger.info(f"✅ Добавлена новая строка {last_row} для сотрудника {surname}, ячейка с часами выделена зеленым")
 
@@ -380,6 +385,14 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
         else:
             try:
                 row_number = loaders_row
+
+                #Определяем ставку работника
+                employee_rate_cell = worksheet.cell(row_number, 6)
+
+                if not employee_rate_cell.value:
+                    raise ValueError('отсутствует значение ставки работника за час')
+
+                current_employee_rate = int(employee_rate_cell.value)
 
                 # Дни начинаются с колонки G (7-я колонка)
                 day_column = 6 + int(date_of_the_month)
@@ -409,20 +422,34 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
                 total_hours = int(total_hours_cell.value) if total_hours_cell.value else 0
                 worksheet.update_cell(row_number, 41, total_hours + int(new_payout.hours))
 
+                # Обновляем Итого к оплате (колонка 44)
+                new_total_payment = int(new_payout.hours) * current_employee_rate
+                worksheet.update_cell(row_number, 44, new_total_payment)
+
                 # Обновляем выплату (колонка 43)
                 payment_cell = worksheet.cell(row_number, 43)
                 current_payment = int(payment_cell.value) if payment_cell.value else 0
-                worksheet.update_cell(row_number, 43, current_payment + payment)
+                worksheet.update_cell(row_number, 43, current_payment + new_total_payment)
 
-                # Итого к оплате (колонка 44)
-                total_payment_cell = worksheet.cell(row_number, 44)
-                total_payment = int(total_payment_cell.value) if total_payment_cell.value else 0
-                worksheet.update_cell(row_number, 44, total_payment + payment)
+                # Получаем текущий комментарий к ячейке (колонка AQ)
+                cell_address = f"AQ{row_number}"
+                current_note = worksheet.get_note(cell_address)  # Используем строковый адрес
+
+
+                # Если комментарий уже существует, добавляем новую информацию
+                if current_note:
+                    new_note = current_note + "\n---\n" + new_payout.comment
+                else:
+                    new_note = new_payout.comment
+
+                # Обновляем комментарий (колонка 43)
+                worksheet.insert_note(cell_address, new_note)  # Используем строковый адрес
+                logger.info(f"✅ Обновлен комментарий к ячейке {cell_address}")
 
                 # Итого сумма за месяц (колонка 45)
                 month_total_cell = worksheet.cell(row_number, 45)
                 month_total = int(month_total_cell.value) if month_total_cell.value else 0
-                worksheet.update_cell(row_number, 45, month_total + payment)
+                worksheet.update_cell(row_number, 45, month_total + new_total_payment)
 
                 # Форматируем всю строку с базовым форматированием (белый цвет)
                 max_col = 49  # Колонка AW

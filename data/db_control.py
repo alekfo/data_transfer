@@ -70,13 +70,14 @@ def get_sheet_id(month: str, sheet_type: str) -> Optional[str]:
             return sheet.google_sheet_id
         return None
 
-def add_payout(date: str, address: str, hours: int, loaders_payments: List[dict]) -> Payout:
+def add_payout(comment: str, date: str, address: str, hours: int, loaders_payments: List[dict]) -> Payout:
     with SessionLocal() as session:
         loaders_payments_str = ''
         for i_load in loaders_payments:
             loaders_payments_str += f"{i_load['name']}-{i_load['payment']},"
 
         new_payout = Payout(
+            comment=comment,
             date = date,
             address = address,
             hours = hours,

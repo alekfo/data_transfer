@@ -42,6 +42,7 @@ class Payout(Base):
     __tablename__ = "payouts"
 
     id = Column(Integer, primary_key=True)
+    comment = Column(String(100), nullable=False)
     date = Column(String(50), nullable=False)
     address = Column(String(100), nullable=False)
     hours = Column(Integer, nullable=False)
