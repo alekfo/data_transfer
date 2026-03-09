@@ -120,7 +120,6 @@ def format_sheet_range(worksheet, start_row: int, end_row: int, start_col: int, 
 
         # Настройки формата ячеек
         fmt = CellFormat(
-            backgroundColor=background_color,
             wrapStrategy='WRAP',
             horizontalAlignment='LEFT',
             verticalAlignment='MIDDLE',
@@ -137,15 +136,14 @@ def format_sheet_range(worksheet, start_row: int, end_row: int, start_col: int, 
         logger.error(f"❌ Ошибка форматирования диапазона {start_col_letter}{start_row}:{end_col_letter}{end_row}: {e}")
         raise e
 
-def get_loaders_row(worksheet, surname):
+def get_loaders_row(worksheet, full_name):
     try:
         # Получаем все значения из колонки C
         column_c = worksheet.col_values(3)
         for row, val in enumerate(column_c[1:], start=2):
             if not val:  # Пропускаем пустые строки
                 continue
-            val_list = val.strip().split()
-            if val_list[0] != surname:
+            if val.strip() != full_name:
                 continue
             return row
         else:
@@ -292,10 +290,10 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
         payment = payment.strip()
         payment = int(payment)
 
-        loaders_list = loaders.split()
-        surname = loaders_list[0]
+        # loaders_list = loaders.split()
+        # surname = loaders_list[0]
 
-        loaders_row = get_loaders_row(worksheet, surname)
+        loaders_row = get_loaders_row(worksheet, loaders)
 
         if not loaders_row:
 
@@ -350,7 +348,7 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
                 last_row = len(worksheet.get_all_values())
                 last_col = len(new_row_data)
 
-                logger.info(f"📊 Добавлена новая строка для {surname} с {last_col} колонками")
+                logger.info(f"📊 Добавлена новая строка для {loaders} с {last_col} колонками")
 
                 # Форматируем всю строку с базовым форматированием (белый цвет)
                 format_sheet_range(
@@ -377,7 +375,7 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
                 worksheet.insert_note(cell_address, new_payout.comment)
                 logger.info(f"✅ Добавлен комментарий к ячейке {cell_address}: {new_payout.comment}")
 
-                logger.info(f"✅ Добавлена новая строка {last_row} для сотрудника {surname}, ячейка с часами выделена зеленым")
+                logger.info(f"✅ Добавлена новая строка {last_row} для сотрудника {loaders}, ячейка с часами выделена зеленым")
 
             except Exception as e:
                 logger.error(f"❌ Ошибка добавления строки: {e}")
@@ -429,7 +427,7 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
                 # Обновляем выплату (колонка 43)
                 payment_cell = worksheet.cell(row_number, 43)
                 current_payment = int(payment_cell.value) if payment_cell.value else 0
-                worksheet.update_cell(row_number, 43, current_payment + new_total_payment)
+                worksheet.update_cell(row_number, 43, new_total_payment)
 
                 # Получаем текущий комментарий к ячейке (колонка AQ)
                 cell_address = f"AQ{row_number}"
@@ -470,10 +468,10 @@ def add_loader_data_to_loader_google_sheet(new_payout: Payout, month: str, date_
                     color='green'
                 )
 
-                logger.info(f"✅ Обновлена строка {row_number} для сотрудника {surname}, ячейка {column_number_to_letter(day_column)}{row_number} выделена зеленым")
+                logger.info(f"✅ Обновлена строка {row_number} для сотрудника {loaders}, ячейка {column_number_to_letter(day_column)}{row_number} выделена зеленым")
 
             except Exception as e:
-                logger.error(f"❌ Ошибка при обновлении строки для {surname}: {e}")
+                logger.error(f"❌ Ошибка при обновлении строки для {loaders}: {e}")
                 raise e
 
     return True
